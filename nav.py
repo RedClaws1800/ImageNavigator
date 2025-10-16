@@ -166,6 +166,7 @@ class Editor(QMainWindow):
 
     def create_button_item(self, rect, target_name):
         btn = ButtonItem(rect, target_name)
+
         def open_target(target=target_name):
             self.open_scene(target)
         btn.mouseDoubleClickEvent = open_target
@@ -249,6 +250,7 @@ class Viewer(QMainWindow):
             btn = ButtonItem(rect, b["target"], editable=False)
             btn.setBrush(QColor(255, 0, 0, 80))
             self.scene.addItem(btn)
+
             def handle_click(target=b["target"]):
                 self.load_scene(target)
             btn.mousePressEvent = handle_click
