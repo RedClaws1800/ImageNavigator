@@ -1,10 +1,7 @@
 import sys, os, json
-from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QFileDialog, QGraphicsView, QGraphicsScene,
-    QGraphicsPixmapItem, QGraphicsRectItem, QToolBar, QMessageBox, QInputDialog
-)
-from PySide6.QtGui import QPixmap, QPen, QColor, QAction, QPainter
-from PySide6.QtCore import QRectF, Qt
+from PySide6.QtWidgets import *
+from PySide6.QtGui import *
+from PySide6.QtCore import *
 
 
 # ---------- Button (rectangle) ----------
@@ -17,10 +14,10 @@ class ButtonItem(QGraphicsRectItem):
         self.setZValue(10)
         if editable:
             self.setFlags(
-                QGraphicsRectItem.ItemIsSelectable
-                | QGraphicsRectItem.ItemIsMovable
-                | QGraphicsRectItem.ItemSendsGeometryChanges
-                | QGraphicsRectItem.ItemIsFocusable
+                ButtonItem.GraphicsItemFlag.ItemIsSelectable
+                and ButtonItem.GraphicsItemFlag.ItemIsMovable
+                and ButtonItem.GraphicsItemFlag.ItemSendsGeometryChanges
+                and ButtonItem.GraphicsItemFlag.ItemIsFocusable
             )
 
 
@@ -28,10 +25,10 @@ class ButtonItem(QGraphicsRectItem):
 class ImageView(QGraphicsView):
     def __init__(self, scene):
         super().__init__(scene)
-        self.setRenderHint(QPainter.Antialiasing)
-        self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
-        self.setResizeAnchor(QGraphicsView.AnchorUnderMouse)
-        self.setDragMode(QGraphicsView.ScrollHandDrag)
+        self.setRenderHint(QPainter.RenderHint.Antialiasing)
+        self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
+        self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
+        self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
         self.mode = "pan"
         self.start_pos = None
         self.temp_rect = None
@@ -42,11 +39,11 @@ class ImageView(QGraphicsView):
         self.scale(zoom, zoom)
 
     def mousePressEvent(self, e):
-        if self.mode == "add_button" and e.button() == Qt.LeftButton:
+        if self.mode == "add_button" and e.button() == Qt.MouseButton.LeftButton:
             self.start_pos = self.mapToScene(e.position().toPoint())
             self.temp_rect = self.scene().addRect(
                 QRectF(self.start_pos, self.start_pos),
-                QPen(QColor("blue"), 2, Qt.DashLine)
+                QPen(QColor("blue"), 2, Qt.PenStyle.DashLine)
             )
         else:
             super().mousePressEvent(e)
@@ -65,7 +62,7 @@ class ImageView(QGraphicsView):
             self.scene().removeItem(self.temp_rect)
             self.temp_rect = None
             self.mode = "pan"
-            self.setDragMode(QGraphicsView.ScrollHandDrag)
+            self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
             if self.parent_window:
                 self.parent_window.finish_button(rect)
         else:
@@ -143,7 +140,7 @@ class Editor(QMainWindow):
             QMessageBox.warning(self, "No Scene", "Load a scene image first.")
             return
         self.view.mode = "add_button"
-        self.view.setDragMode(QGraphicsView.NoDrag)
+        self.view.setDragMode(QGraphicsView.DragMode.NoDrag)
         QMessageBox.information(self, "Add Button Mode",
                                 "Drag a rectangle on the image to make a button.")
 
@@ -169,7 +166,8 @@ class Editor(QMainWindow):
 
     def create_button_item(self, rect, target_name):
         btn = ButtonItem(rect, target_name)
-        def open_target(event, target=target_name):
+
+        def open_target(target=target_name):
             self.open_scene(target)
         btn.mouseDoubleClickEvent = open_target
         return btn
@@ -179,7 +177,7 @@ class Editor(QMainWindow):
         data = self.project["scenes"][scene_name]
         self.scene.load_image(data["background"])
         for b in data["buttons"]:
-            rect = QRectF(*b["coords"])
+            rect = QRectF(b["coords"])
             btn = self.create_button_item(rect, b["target"])
             self.scene.addItem(btn)
 
@@ -248,11 +246,12 @@ class Viewer(QMainWindow):
         self.current_scene = name
         self.scene.load_image(data["background"])
         for b in data["buttons"]:
-            rect = QRectF(*b["coords"])
+            rect = QRectF(b["coords"])
             btn = ButtonItem(rect, b["target"], editable=False)
             btn.setBrush(QColor(255, 0, 0, 80))
             self.scene.addItem(btn)
-            def handle_click(event, target=b["target"]):
+
+            def handle_click(target=b["target"]):
                 self.load_scene(target)
             btn.mousePressEvent = handle_click
 
